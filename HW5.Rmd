@@ -1,0 +1,55 @@
+---
+title: "Homework 5"
+author: "Ka Man Chan"
+date: "September 30, 2016"
+output: html_document
+---
+
+install.packages("tidyr")
+install.packages("dplyr")
+install.packages("RMySQL")
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+# Introduction:
+## Read the information from MySQL Database into R,and use tidyr and dplyr to tidy and transform my data.
+## Perform analysis to compare the arrival delays for the two airlines.
+
+library(tidyr)
+library(dplyr)
+library(RMySQL)
+ 
+# Connect to the MySQL database
+mydb = dbConnect(MySQL(), user='user1', password='Password1234', dbname='sys', host='localhost')
+ 
+rs = dbSendQuery(mydb, "select * from Airline")
+ 
+# load records to data frame
+Mydata = fetch(rs, n=-1)
+
+# Records in MySQL database 
+Mydata
+
+# This turns our wide data to a long format with Airline, Destination, Arrival == 'Delayed' and the frequency 
+Mydata %>%
+        gather(Destination, Frequency, 3:7)  %>% filter(Arrival == 'Delayed')
+ 
+Result =Mydata %>%
+        gather(Destination, Frequency, 3:7) %>%   # this turns our wide data to a long format
+        filter(Arrival == 'Delayed') %>%          # I only want to compare Arrival = Delayed
+        group_by(Airline) %>%                     # I want to summarize data at the Airline level
+        summarise(Sum = sum(Frequency)) %>%       # Sum the Frquency
+        arrange(desc(Airline))                    # order by airline in descending order
+
+Result
+Ratio=round(as.integer(Result[1,2])/as.integer(Result[2,2]), digits=2)
+print (paste("The difference of delayed arrival between", Result[1,1] , "and",  Result[2,1] , ":" ,toString(as.integer(Result[1,2])-as.integer(Result[2,2]))))
+print (paste("The Ratio of delayed arrival between", Result[2,1] , "and",  Result[1,1] , " 1 :" ,toString(Ratio)))
+
+#Conclusion
+## Analysis to compare the arrival delays for the two airlines
+## AM West Airline has higher arrival delayed than ALASKA Airline
+```
